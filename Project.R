@@ -58,18 +58,27 @@ body <- dashboardBody(
       tabBox(
         title = "Charts",
         width = 12,
-        tabPanel("Charts", "Coming soon..."),
-        inputPanel(
-          selectInput("payment_methode", "Select a payment methode",
-            choices = "",
-            selected = "Ewallet",
-            multiple = TRUE
-          )
+        tabPanel(
+          "By payment methode",
+          inputPanel(
+            selectInput("payment_methode", "Select a payment methode",
+              choices = "",
+              selected = "Ewallet",
+              multiple = TRUE
+            )
+          ),
+          plotOutput("vis_income")
         ),
-        tabBox(
-          title = "Payment Method Analysis",
-          width = 12,
-          tabPanel("By payment methode", plotOutput("vis_income"))
+        tabPanel(
+          "By city",
+          inputPanel(
+            selectInput("city", "Select a city",
+              choices = "",
+              selected = "Yangon",
+              multiple = TRUE
+            )
+          ),
+          plotOutput("vis_city")
         )
       )
     )
@@ -129,9 +138,27 @@ server <- function(input, output, session) {
       geom_col() +
       labs(
         title = "Amount of sales per payment method",
-        x = "Total Sales",
-        y = "Payment Method"
+        x = "Payment Method",
+        y = "Total Sales"
       ) +
+      scale_y_continuous() +
+      theme_minimal() +
+      scale_color_viridis(discrete = TRUE)
+  })
+
+  output$vis_city <- renderPlot({
+    sales_data() %>%
+      filter(City %in% input$city) %>%
+      group_by(City) %>%
+      summarise(Total = sum(Total)) %>%
+      ggplot(aes(x = City, y = Total, fill = City)) +
+      geom_col() +
+      labs(
+        title = "Amount of sales per city",
+        x = "City",
+        y = "Total Sales"
+      ) +
+      scale_y_continuous() +
       theme_minimal() +
       scale_color_viridis(discrete = TRUE)
   })
@@ -150,6 +177,11 @@ server <- function(input, output, session) {
     updateSelectInput(session, "payment_methode",
       choices = unique_payments,
       selected = "Ewallet"
+    )
+
+    updateSelectInput(session, "city",
+      choices = unique(sales_data()$City),
+      selected = "Yangon"
     )
   })
 }

@@ -4,6 +4,8 @@ library(dplyr)
 library(DT)
 library(leaflet)
 library(tidygeocoder)
+library(tidyverse)
+library(viridis)
 
 # Define the URL for the CSV file
 filepath <- "https://raw.githubusercontent.com/sushantag9/Supermarket-Sales-Data-Analysis/master/supermarket_sales%20-%20Sheet1.csv"
@@ -18,7 +20,8 @@ sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem("Dashboard", tabName = "dashboard"),
     menuItem("Map", tabName = "map"),
-    menuItem("Inputs", tabName = "inputs")
+    menuItem("Inputs", tabName = "inputs"),
+    menuItem("Charts", tabName = "charts")
   )
 )
 
@@ -48,6 +51,26 @@ body <- dashboardBody(
         title = "Map",
         width = 12,
         tabPanel("Map", leafletOutput("sales_map", height = 800))
+      )
+    ),
+    tabItem(
+      tabName = "charts",
+      tabBox(
+        title = "Charts",
+        width = 12,
+        tabPanel("Charts", "Coming soon..."),
+        inputPanel(
+          selectInput("payment_methode", "Select a payment methode",
+            choices = "",
+            selected = "Ewallet",
+            multiple = TRUE
+          )
+        ),
+        tabBox(
+          title = "Payment Method Analysis",
+          width = 12,
+          tabPanel("By payment methode", plotOutput("vis_income"))
+        )
       )
     )
   )
@@ -86,14 +109,48 @@ server <- function(input, output, session) {
     geo_data <- geocoded_data()
 
     leaflet(geo_data) %>%
+      addProviderTiles(providers$Esri.NatGeoWorldMap) %>%
       addTiles() %>%
       addCircleMarkers(
         ~long, ~lat,
         label = ~City,
-        radius = 5,
+        radius = 20,
         color = "blue",
-        fillOpacity = 0.5
+        fillOpacity = 0.8
       )
+  })
+
+  output$vis_income <- renderPlot({
+    sales_data() %>%
+      filter(Payment %in% input$payment_methode) %>%
+      group_by(Payment) %>%
+      summarise(Total = sum(Total)) %>%
+      ggplot(aes(x = Payment, y = Total, fill = Payment)) +
+      geom_col() +
+      labs(
+        title = "Amount of sales per payment method",
+        x = "Total Sales",
+        y = "Payment Method"
+      ) +
+      theme_minimal() +
+      scale_color_viridis(discrete = TRUE)
+  })
+
+  # Observe changes in sales_data and update selectInput accordingly
+  observe({
+    # Ensure sales_data is available before trying to use it
+    if (is.null(sales_data())) {
+      return()
+    }
+
+    # Extract unique payment methods from the sales_data
+    unique_payments <- unique(sales_data()$Payment)
+
+    # Update the selectInput with the unique payment methods
+    updateSelectInput(session, "payment_methode",
+      choices = unique_payments,
+      selected = "Ewallet"
+    )
   })
 }
 

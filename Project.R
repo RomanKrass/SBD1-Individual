@@ -79,11 +79,43 @@ body <- dashboardBody(
             )
           ),
           plotOutput("vis_city")
+        ),
+        tabPanel(
+          "Custom",
+          inputPanel(
+            selectInput("city2", "Select a city",
+              choices = "",
+              selected = "Yangon",
+              multiple = TRUE
+            ),
+            selectInput("payment_methode2", "Select a payment methode",
+              choices = "",
+              selected = "Ewallet",
+              multiple = TRUE
+            ),
+            selectInput("gender", "Select a gender",
+              choices = "",
+              selected = "Male",
+              multiple = TRUE
+            ),
+            selectInput("product_line", "Select a product line",
+              choices = "",
+              selected = "Health and beauty",
+              multiple = TRUE
+            ),
+            selectInput("member_type", "Select a member type",
+              choices = "",
+              selected = "Normal",
+              multiple = TRUE
+            )
+          ),
+          plotOutput("custom")
         )
       )
     )
   )
 )
+
 
 # Define the UI
 ui <- dashboardPage(
@@ -163,6 +195,28 @@ server <- function(input, output, session) {
       scale_color_viridis(discrete = TRUE)
   })
 
+  output$custom <- renderPlot({
+    sales_data() %>%
+      filter(
+        City %in% input$city2,
+        Payment %in% input$payment_methode2,
+        Gender %in% input$gender,
+        `Product.line` %in% input$product_line,
+        `Customer.type` %in% input$member_type
+      ) %>%
+      group_by(City) %>%
+      summarise(Total = sum(Total)) %>%
+      ggplot(aes(x = City, y = Total, fill = City)) +
+      geom_col() +
+      labs(
+        title = "Amount of sales per city",
+        x = "City",
+        y = "Total Sales"
+      ) +
+      scale_y_continuous() +
+      theme_minimal()
+  })
+
   # Observe changes in sales_data and update selectInput accordingly
   observe({
     # Ensure sales_data is available before trying to use it
@@ -179,9 +233,34 @@ server <- function(input, output, session) {
       selected = "Ewallet"
     )
 
+    updateSelectInput(session, "payment_methode2",
+      choices = unique_payments,
+      selected = "Ewallet"
+    )
+
     updateSelectInput(session, "city",
       choices = unique(sales_data()$City),
       selected = "Yangon"
+    )
+    updateSelectInput(session, "city2",
+      choices = unique(sales_data()$City),
+      selected = "Yangon"
+    )
+
+
+    updateSelectInput(session, "gender",
+      choices = unique(sales_data()$Gender),
+      selected = "Male"
+    )
+
+    updateSelectInput(session, "product_line",
+      choices = unique(sales_data()$Product.line),
+      selected = "Health and beauty"
+    )
+
+    updateSelectInput(session, "member_type",
+      choices = unique(sales_data()$Customer.type),
+      selected = "Normal"
     )
   })
 }

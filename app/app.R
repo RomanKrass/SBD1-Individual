@@ -171,7 +171,7 @@ server <- function(input, output, session) {
 
   # Render the data table
   output$sales_table <- renderDT({
-    datatable(sales_data(), options = list(pageLength = 10, autoWidth = TRUE))
+    datatable(sales_data(), options = list(pageLength = 15, autoWidth = TRUE))
   })
 
   # Render the leaflet map
@@ -179,7 +179,7 @@ server <- function(input, output, session) {
     geo_data <- geocoded_data()
 
     leaflet(geo_data) %>%
-      addProviderTiles(providers$Esri.NatGeoWorldMap) %>%
+      addProviderTiles(providers$Esri.NatGeoWorldMap) %>% # Define the map provider
       addTiles() %>%
       addResetMapButton() %>%
       addCircleMarkers(
@@ -236,7 +236,7 @@ server <- function(input, output, session) {
       group_by(City, Date) %>%
       summarise(Total = sum(Total), .groups = "drop") %>%
       ggplot(aes(x = Date, y = Total, color = City)) +
-      geom_line() +
+      geom_line(size = 1.5) +
       labs(
         title = "Amount of sales per city",
         x = "City",
@@ -244,10 +244,10 @@ server <- function(input, output, session) {
       ) +
       scale_y_continuous() +
       theme_minimal(base_size = 14) +
-      scale_color_viridis(discrete = TRUE)
+      scale_color_viridis(discrete = TRUE, option = "magma", begin = 0.2, end = 0.8)
   })
 
-  # Render customised plot
+  # Render customized plot
   output$custom <- renderPlot({
     sales_data() %>%
       filter(
@@ -305,7 +305,7 @@ server <- function(input, output, session) {
 
     page <- rvest::read_html(URLExchangeRate)
     rate <- page %>%
-      rvest::html_nodes(".sc-295edd9f-1") %>%
+      rvest::html_nodes(".sc-295edd9f-1") %>% # extract the exchange rate
       rvest::html_text()
 
     # Return the fetched rate
